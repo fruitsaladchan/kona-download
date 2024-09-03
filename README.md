@@ -1,7 +1,7 @@
 # kona-download
 
 
-# dependencies
+## dependencies
 ```
 pip install requests beautifulsoup4
 ```
