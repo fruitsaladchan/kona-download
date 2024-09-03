@@ -1,5 +1,6 @@
 # kona-download
 
+simple script to download photos from https://konachan.com/
 
 ## dependencies
 ```
