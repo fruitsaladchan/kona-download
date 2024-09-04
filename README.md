@@ -12,8 +12,8 @@ simple script to download photos from https://konachan.com/
 pip install requests beautifulsoup4
 ```
 ```
-sudo pacman -S figlet nmap (For Arch Linux)
+sudo pacman -S figlet (For Arch Linux)
 ```
 ```
-sudo apt-get install figlet nmap (For Ubuntu/Debian)
+sudo apt-get install figlet (For Ubuntu/Debian)
 ```
