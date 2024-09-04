@@ -14,5 +14,4 @@ sudo pacman -S figlet nmap (For Arch Linux)
 ```
 ```
 sudo apt-get install figlet nmap (For Ubuntu/Debian)
-
 ```
