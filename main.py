@@ -46,9 +46,9 @@ def download_image(url, folder):
         filename = os.path.join(folder, url.split('/')[-1])
         with open(filename, 'wb') as f:
             f.write(response.content)
-        slowprint(f"Downloaded {filename}")
+        print(f"Downloaded {filename}")
     else:
-        slowprint(f"Failed to download {url}")
+        print(f"Failed to download {url}")
 
 def create_folder(folder_name):
     if not os.path.exists(folder_name):
@@ -60,7 +60,7 @@ def rename_images(folder):
         if filename.endswith(('.jpg', '.png', '.jpeg')):
             new_name = f"{random.randint(1000000, 9999999)}.jpg"
             os.rename(os.path.join(folder, filename), os.path.join(folder, new_name))
-            slowprint(f"Renamed {filename} to {new_name}")
+            print(f"Renamed {filename} to {new_name}")
 
 def get_images(tag, character, pages, folder_name):
     base_url = "https://konachan.com/post"
@@ -78,7 +78,7 @@ def get_images(tag, character, pages, folder_name):
             for img in images:
                 download_image(img['href'], folder)
         else:
-            slowprint(f"Failed to retrieve page {page}.")
+            print(f"Failed to retrieve page {page}.")
     
     rename_images(folder)
     slowprint("All images have been renamed.")
