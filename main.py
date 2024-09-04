@@ -88,10 +88,10 @@ def konachan_downloader():
         try:
             os.system("figlet Downloader")
             print(" ")
-            tag = input("Enter tags (optional): ").strip()
-            character = input("Enter characters (optional): ").strip()
+            tag = input("Enter tags (eg long_hair, skirt, original, touhou. etc): ").strip()
+            character = input("Enter characters (eg hatsune_miku, kagamine_rin, yakumo_yukari etc): ").strip()
             
-            pages_input = input("Enter page numbers (space-separated, default is 1): ").strip()
+            pages_input = input("How many pages to download (eg. 1 2 3 4 | default is 1 page): ").strip()
             if not pages_input:
                 pages = ['1']  # Default to page 1 if no input
             else:
@@ -100,12 +100,12 @@ def konachan_downloader():
             folder_name = input("Enter folder name: ").strip()
             
             if not folder_name:
-                folder_name = "konachan_images"
+                folder_name = "images"
             
             folder_name = os.path.join(os.getcwd(), folder_name)
             
             get_images(tag, character, pages, folder_name)
-            input("\033[1;36mPress Enter to return to the menu...")
+            input("\033[1;36mPress Enter to return ...")
             os.system("clear")
             break
 
