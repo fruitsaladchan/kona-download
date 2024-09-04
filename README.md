@@ -6,7 +6,7 @@ simple script to download photos from https://konachan.com/
 - to download multiple pages enter it as "1 2 3 4 etc" / leaving blank downloads the first page
 - leaving the folder name option emtpy will create and store the files in a folder called images/ in the current working directory
 
-## dependencies
+# dependencies
 
 ```
 pip install requests beautifulsoup4
