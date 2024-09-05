@@ -62,8 +62,8 @@ def rename_images(folder):
             os.rename(os.path.join(folder, filename), os.path.join(folder, new_name))
             print(f"Renamed {filename} to {new_name}")
 
-def get_images(tag, character, pages, folder_name):
-    base_url = "https://konachan.com/post"
+def get_images(tag, character, pages, folder_name, nsfw):
+    base_url = "https://konachan.com/post?tags=" if nsfw else "https://konachan.net/post?tags="
     folder = create_folder(folder_name)
 
     for page in pages:
@@ -102,9 +102,17 @@ def konachan_downloader():
             if not folder_name:
                 folder_name = "images"
             
+            while True:
+                nsfw_input = input("Do you want NSFW images? (yes/leave blank for NSFW): ").strip().lower()
+                if nsfw_input in ['yes', 'no', '']:
+                    nsfw = nsfw_input in ['yes', '']
+                    break
+                else:
+                    print("\033[1;91mInvalid input! Please enter 'yes', 'no', or leave blank for NSFW.\033[0m")
+
             folder_name = os.path.join(os.getcwd(), folder_name)
             
-            get_images(tag, character, pages, folder_name)
+            get_images(tag, character, pages, folder_name, nsfw)
             input("\033[1;36mPress Enter to return ...")
             os.system("clear")
             break
