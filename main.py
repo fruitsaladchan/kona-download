@@ -102,7 +102,7 @@ def konachan_downloader():
             tag = input("Enter tags (eg long_hair, skirt, original, touhou. etc): ").strip()
             character = input("Enter characters (eg hatsune_miku, kagamine_rin, yakumo_yukari etc): ").strip()
 
-            pages_input = input("Enter pages (eg. 1 2 3 5 6 or 1-4 | default is 1 page): ").strip()
+            pages_input = input("Enter pages (eg. 1 3 5 or 1-5 | default is 1 page): ").strip()
             if not pages_input:
                 pages = [1]  # Default to page 1 if no input
             else:
