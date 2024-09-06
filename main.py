@@ -38,6 +38,7 @@ def ext():
     slowprint("\033[1;36m ==============================================")
     slowprint("\033[1;33m |             Thanks For Using               |")
     slowprint("\033[1;36m ==============================================")
+    print(" ")
     sys.exit()
 
 def download_image(url, folder):
@@ -61,6 +62,16 @@ def rename_images(folder):
             new_name = f"{random.randint(1000000, 9999999)}.jpg"
             os.rename(os.path.join(folder, filename), os.path.join(folder, new_name))
             print(f"Renamed {filename} to {new_name}")
+
+def parse_pages(pages_input):
+    pages = set()  
+    for part in pages_input.split():
+        if '-' in part:  
+            start, end = map(int, part.split('-'))
+            pages.update(range(start, end + 1))  
+        else:
+            pages.add(int(part))  
+    return sorted(pages)  
 
 def get_images(tag, character, pages, folder_name, nsfw):
     base_url = "https://konachan.com/post?tags=" if nsfw else "https://konachan.net/post?tags="
@@ -90,20 +101,19 @@ def konachan_downloader():
             print(" ")
             tag = input("Enter tags (eg long_hair, skirt, original, touhou. etc): ").strip()
             character = input("Enter characters (eg hatsune_miku, kagamine_rin, yakumo_yukari etc): ").strip()
-            
-            pages_input = input("How many pages to download (eg. 1 2 3 4 | default is 1 page): ").strip()
+
+            pages_input = input("Enter pages (eg. 1 2 3 5 6 or 1-4 | default is 1 page): ").strip()
             if not pages_input:
-                pages = ['1']  # Default to page 1 if no input
+                pages = [1]  # Default to page 1 if no input
             else:
-                pages = pages_input.split()
-            
+                pages = parse_pages(pages_input)
+
             folder_name = input("Enter folder name: ").strip()
-            
             if not folder_name:
                 folder_name = "images"
             
             while True:
-                nsfw_input = input("Do you want NSFW images? (yes/leave blank for NSFW): ").strip().lower()
+                nsfw_input = input("Do you want NSFW images? (yes/no leave blank for NSFW): ").strip().lower()
                 if nsfw_input in ['yes', 'no', '']:
                     nsfw = nsfw_input in ['yes', '']
                     break
@@ -113,6 +123,7 @@ def konachan_downloader():
             folder_name = os.path.join(os.getcwd(), folder_name)
             
             get_images(tag, character, pages, folder_name, nsfw)
+            print(" ")
             input("\033[1;36mPress Enter to return ...")
             os.system("clear")
             break
