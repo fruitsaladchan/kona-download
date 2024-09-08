@@ -92,12 +92,14 @@ def get_images(tag, character, pages, folder_name, nsfw):
             print(f"Failed to retrieve page {page}.")
     
     rename_images(folder)
-    slowprint("All images have been renamed.")
+    print(" ")
+    slowprint("All images have been Downloaded.")
 
 def konachan_downloader():
     while True:
         try:
             os.system("figlet Downloader")
+            slowprint("\033[1;36m ==============================================")
             print(" ")
             tag = input("Enter tags (eg long_hair, skirt, original, touhou. etc): ").strip()
             character = input("Enter characters (eg hatsune_miku, kagamine_rin, yakumo_yukari etc): ").strip()
@@ -120,9 +122,13 @@ def konachan_downloader():
                 else:
                     print("\033[1;91mInvalid input! Please enter 'yes', 'no', or leave blank for NSFW.\033[0m")
 
+            print(" ")
+            slowprint("\033[1;36m ==============================================")
             folder_name = os.path.join(os.getcwd(), folder_name)
             
             get_images(tag, character, pages, folder_name, nsfw)
+            print(" ")
+            slowprint("\033[1;36m ==============================================")
             print(" ")
             input("\033[1;36mPress Enter to return ...")
             os.system("clear")
@@ -138,6 +144,7 @@ def main():
             os.system("clear")
             print("\033[1;36m")
             os.system("figlet Kona Downloader")
+            slowprint("\033[1;36m ==============================================")
             slowprint(" ")
 
             menu_options = [
