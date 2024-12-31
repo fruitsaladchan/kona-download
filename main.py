@@ -11,7 +11,6 @@ import logging
 from requests.adapters import HTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 
-# Set up logging
 logging.basicConfig(level=logging.INFO, format='%(message)s')
 logger = logging.getLogger(__name__)
 
@@ -45,21 +44,19 @@ def download_image(url, folder, session, pbar):
     try:
         response = session.get(url, timeout=10, stream=True)
         if response.status_code == 200:
-            # Check file size (skip if larger than 50MB)
+            #  (skip if larger than 50MB)
             content_length = int(response.headers.get('content-length', 0))
-            if content_length > 50 * 1024 * 1024:  # 50MB
+            if content_length > 50 * 1024 * 1024:  
                 logger.warning(f"Skipping {url} - File too large ({content_length/1024/1024:.2f}MB)")
                 return False
 
             filename = os.path.join(folder, url.split('/')[-1])
             
-            # Validate content type
             content_type = response.headers.get('content-type', '')
             if not content_type.startswith('image/'):
                 logger.warning(f"Skipping {url} - Not an image (content-type: {content_type})")
                 return False
 
-            # Download with progress
             with open(filename, 'wb') as f:
                 for chunk in response.iter_content(chunk_size=1024):
                     if chunk:
@@ -76,10 +73,8 @@ def create_folder(folder_name):
     return folder_name
 
 def rename_images(folder):
-    # Get list of image files first
     image_files = [f for f in os.listdir(folder) if f.endswith(('.jpg', '.png', '.jpeg'))]
     
-    # Use tqdm for renaming progress
     for filename in tqdm(image_files, desc="Renaming images"):
         new_name = f"{random.randint(1000000, 9999999)}.jpg"
         os.rename(os.path.join(folder, filename), os.path.join(folder, new_name))
@@ -113,8 +108,7 @@ def get_images(tag, character, pages, folder_name, nsfw, max_workers=5):
             images = soup.find_all('a', class_='directlink largeimg')
             image_urls.extend([img['href'] for img in images])
             
-            # Add rate limiting
-            time.sleep(1)  # Be nice to the server
+            time.sleep(1)  # be nice to the server
         except Exception as e:
             logger.error(f"Error fetching page {page}: {str(e)}")
     
@@ -122,22 +116,18 @@ def get_images(tag, character, pages, folder_name, nsfw, max_workers=5):
         logger.warning("No images found!")
         return
 
-    # Download images concurrently
     successful_downloads = 0
     with ThreadPoolExecutor(max_workers=max_workers) as executor:
         futures = []
         
-        # Create progress bars for each image
         progress_bars = []
         for url in image_urls:
-            # Get file size first
             try:
                 response = session.head(url)
                 file_size = int(response.headers.get('content-length', 0))
             except:
                 file_size = 0
             
-            # Get filename and truncate if too long
             filename = url.split('/')[-1]
             if len(filename) > 20:
                 filename = filename[:17] + "..."
@@ -148,18 +138,17 @@ def get_images(tag, character, pages, folder_name, nsfw, max_workers=5):
                 unit='B',
                 unit_scale=True,
                 leave=True,
-                ncols=80  # Fixed width for cleaner display
+                ncols=80 
             )
             progress_bars.append(pbar)
             futures.append(executor.submit(download_image, url, folder, session, pbar))
         
-        # Wait for all downloads to complete
         for future, pbar in zip(futures, progress_bars):
             if future.result():
                 successful_downloads += 1
             pbar.close()
 
-        print("\n")  # Add some spacing after all progress bars
+        print("\n") 
         logger.info(f"Successfully downloaded {successful_downloads} out of {len(image_urls)} images")
 
     rename_images(folder)
