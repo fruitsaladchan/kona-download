@@ -108,7 +108,7 @@ def get_images(tag, character, pages, folder_name, nsfw, max_workers=5):
             images = soup.find_all('a', class_='directlink largeimg')
             image_urls.extend([img['href'] for img in images])
             
-            time.sleep(1)  # be nice to the server
+        #    time.sleep(1)  # be nice to the server
         except Exception as e:
             logger.error(f"Error fetching page {page}: {str(e)}")
     
