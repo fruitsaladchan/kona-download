@@ -9,7 +9,7 @@ simple script to download photos from https://konachan.com/
 # dependencies
 
 ```
-pip install requests beautifulsoup4
+pip install tqdm requests beautifulsoup4
 ```
 ## For Arch Linux
 ```
