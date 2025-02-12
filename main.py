@@ -2,7 +2,6 @@ import os
 import requests
 from bs4 import BeautifulSoup
 import random
-import time
 import sys
 from rich.console import Console
 from rich.progress import (
@@ -14,9 +13,9 @@ from rich.progress import (
 )
 from rich.prompt import Prompt
 from rich.panel import Panel
-from rich.text import Text
 
 console = Console()
+
 
 def download_image(url, folder, progress):
     response = requests.get(url)
@@ -126,23 +125,28 @@ def get_images(tag, character, pages, folder_name, nsfw):
 
 def main():
     try:
+        os.system("clear")
         console.print(
             Panel.fit("[cyan]Konachan downloader...[/cyan]", border_style="cyan")
         )
         console.print("=" * 46, style="cyan bold")
         console.print()
 
-        console.print("[dim]Examples: long_hair, skirt, original, touhou[/dim]")
+        console.print(
+            "[bold]Examples: long_hair, skirt, original, touhou, blue_archive[/bold]"
+        )
         tag = Prompt.ask(
             "[cyan]Enter tags[/cyan]", default="", show_default=False
         ).strip()
 
-        console.print("[dim]Examples: hatsune_miku, kagamine_rin, yakumo_yukari[/dim]")
+        console.print(
+            "[bold]Examples: hatsune_miku, kagamine_rin, yakumo_yukari[/bold]"
+        )
         character = Prompt.ask(
             "[cyan]Enter characters[/cyan]", default="", show_default=False
         ).strip()
 
-        console.print("[dim]Examples: 1 3 5 or 1-5[/dim]")
+        console.print("[bold]Examples: 1 3 5 or 1-5[/bold]")
         pages_input = Prompt.ask(
             "[cyan]Enter pages[/cyan]", default="1", show_default=False
         ).strip()
