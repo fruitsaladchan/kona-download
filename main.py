@@ -4,201 +4,196 @@ from bs4 import BeautifulSoup
 import random
 import time
 import sys
-from concurrent.futures import ThreadPoolExecutor
-from tqdm import tqdm
-import mimetypes
-import logging
-from requests.adapters import HTTPAdapter
-from requests.packages.urllib3.util.retry import Retry
+from rich.console import Console
+from rich.progress import (
+    Progress,
+    SpinnerColumn,
+    TextColumn,
+    BarColumn,
+    TaskProgressColumn,
+)
+from rich.prompt import Prompt
+from rich.panel import Panel
+from rich.text import Text
 
-logging.basicConfig(level=logging.INFO, format='%(message)s')
-logger = logging.getLogger(__name__)
+console = Console()
 
-def slowprint(text, delay=1./400):
+
+def slowprint(text, delay=1.0 / 400):
+    text_obj = Text(text)
     for char in text:
-        sys.stdout.write(char)
-        sys.stdout.flush()
+        console.print(char, end="")
         time.sleep(delay)
-    print("")
+    console.print()
 
-def setup_requests_session():
-    session = requests.Session()
-    retry_strategy = Retry(
-        total=3,
-        backoff_factor=1,
-        status_forcelist=[429, 500, 502, 503, 504]
-    )
-    adapter = HTTPAdapter(max_retries=retry_strategy)
-    session.mount("http://", adapter)
-    session.mount("https://", adapter)
-    return session
 
-def is_valid_image(content):
-    """Validate if the content is actually an image"""
-    image_formats = ['image/jpeg', 'image/png', 'image/gif']
-    content_type = mimetypes.guess_type(content)[0]
-    return content_type in image_formats
+def download_image(url, folder, progress):
+    response = requests.get(url)
+    if response.status_code == 200:
+        filename = os.path.join(folder, url.split("/")[-1])
+        with open(filename, "wb") as f:
+            f.write(response.content)
 
-def download_image(url, folder, session, pbar):
-    """Download image with retry mechanism and validation"""
-    try:
-        response = session.get(url, timeout=10, stream=True)
-        if response.status_code == 200:
-            #  (skip if larger than 50MB)
-            content_length = int(response.headers.get('content-length', 0))
-            if content_length > 50 * 1024 * 1024:  
-                logger.warning(f"Skipping {url} - File too large ({content_length/1024/1024:.2f}MB)")
-                return False
-
-            filename = os.path.join(folder, url.split('/')[-1])
-            
-            content_type = response.headers.get('content-type', '')
-            if not content_type.startswith('image/'):
-                logger.warning(f"Skipping {url} - Not an image (content-type: {content_type})")
-                return False
-
-            with open(filename, 'wb') as f:
-                for chunk in response.iter_content(chunk_size=1024):
-                    if chunk:
-                        f.write(chunk)
-                        pbar.update(len(chunk))
-            return True
-    except Exception as e:
-        logger.error(f"Error downloading {url}: {str(e)}")
-        return False
 
 def create_folder(folder_name):
     if not os.path.exists(folder_name):
         os.makedirs(folder_name)
     return folder_name
 
+
 def rename_images(folder):
-    image_files = [f for f in os.listdir(folder) if f.endswith(('.jpg', '.png', '.jpeg'))]
-    
-    for filename in tqdm(image_files, desc="Renaming images"):
-        new_name = f"{random.randint(1000000, 9999999)}.jpg"
-        os.rename(os.path.join(folder, filename), os.path.join(folder, new_name))
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+    ) as progress:
+        files = [f for f in os.listdir(folder) if f.endswith((".jpg", ".png", ".jpeg"))]
+        rename_task = progress.add_task("[cyan]Renaming files...", total=len(files))
+
+        for filename in files:
+            new_name = f"{random.randint(1000000, 9999999)}.jpg"
+            os.rename(os.path.join(folder, filename), os.path.join(folder, new_name))
+            progress.advance(rename_task)
+
 
 def parse_pages(pages_input):
-    pages = set()  
+    pages = set()
     for part in pages_input.split():
-        if '-' in part:  
-            start, end = map(int, part.split('-'))
-            pages.update(range(start, end + 1))  
+        if "-" in part:
+            start, end = map(int, part.split("-"))
+            pages.update(range(start, end + 1))
         else:
-            pages.add(int(part))  
-    return sorted(pages)  
+            pages.add(int(part))
+    return sorted(pages)
 
-def get_images(tag, character, pages, folder_name, nsfw, max_workers=5):
-    base_url = "https://konachan.com/post?tags=" if nsfw else "https://konachan.net/post?tags="
+
+def get_images(tag, character, pages, folder_name, nsfw):
+    base_url = (
+        "https://konachan.com/post?tags=" if nsfw else "https://konachan.net/post?tags="
+    )
     folder = create_folder(folder_name)
-    session = setup_requests_session()
-    
-    image_urls = []
-    for page in tqdm(pages, desc="Fetching pages"):
-        params = {'page': page}
+
+    total_images = 0
+    for page in pages:
+        params = {"page": page}
         if tag or character:
-            params['tags'] = (tag + ' ' + character).strip()
-        
-        try:
-            response = session.get(base_url, params=params)
-            response.raise_for_status()
-            
-            soup = BeautifulSoup(response.content, 'html.parser')
-            images = soup.find_all('a', class_='directlink largeimg')
-            image_urls.extend([img['href'] for img in images])
-            
-        #    time.sleep(1)  # be nice to the server
-        except Exception as e:
-            logger.error(f"Error fetching page {page}: {str(e)}")
-    
-    if not image_urls:
-        logger.warning("No images found!")
-        return
+            params["tags"] = (tag + " " + character).strip()
 
-    successful_downloads = 0
-    with ThreadPoolExecutor(max_workers=max_workers) as executor:
-        futures = []
-        
-        progress_bars = []
-        for url in image_urls:
-            try:
-                response = session.head(url)
-                file_size = int(response.headers.get('content-length', 0))
-            except:
-                file_size = 0
-            
-            filename = url.split('/')[-1]
-            if len(filename) > 20:
-                filename = filename[:17] + "..."
-            
-            pbar = tqdm(
-                total=file_size,
-                desc=f"[{len(progress_bars) + 1}/{len(image_urls)}] {filename}",
-                unit='B',
-                unit_scale=True,
-                leave=True,
-                ncols=80 
-            )
-            progress_bars.append(pbar)
-            futures.append(executor.submit(download_image, url, folder, session, pbar))
-        
-        for future, pbar in zip(futures, progress_bars):
-            if future.result():
-                successful_downloads += 1
-            pbar.close()
+        response = requests.get(base_url, params=params)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, "html.parser")
+            images = soup.find_all("a", class_="directlink largeimg")
+            total_images += len(images)
 
-        print("\n") 
-        logger.info(f"Successfully downloaded {successful_downloads} out of {len(image_urls)} images")
+    with Progress(
+        SpinnerColumn(),
+        TextColumn("[progress.description]{task.description}"),
+        BarColumn(),
+        TaskProgressColumn(),
+    ) as progress:
+        download_task = progress.add_task(
+            "[magenta]Downloading images...", total=total_images
+        )
+
+        for page in pages:
+            params = {"page": page}
+            if tag or character:
+                params["tags"] = (tag + " " + character).strip()
+
+            response = requests.get(base_url, params=params)
+            if response.status_code == 200:
+                soup = BeautifulSoup(response.content, "html.parser")
+                images = soup.find_all("a", class_="directlink largeimg")
+
+                if images:
+                    for img in images:
+                        download_image(img["href"], folder, progress)
+                        progress.advance(download_task)
+                else:
+                    console.print(f"[yellow]No images found on page {page}[/yellow]")
+            else:
+                console.print(f"[red]Failed to retrieve page {page}[/red]")
 
     rename_images(folder)
-    slowprint("\nAll images downloaded successfully!")
-    slowprint("\033[1;36m ==============================================")
+    console.print()
+    console.print(Panel.fit("[cyan]Cleaning up...[/cyan]", border_style="cyan"))
+    file_count = len(
+        [f for f in os.listdir(folder) if f.endswith((".jpg", ".png", ".jpeg"))]
+    )
+    console.print(
+        Panel.fit(
+            f"[green]Successfully downloaded {file_count} images![/green]",
+            title="Success",
+            border_style="green",
+        )
+    )
+    console.print()
+    console.print("=" * 46, style="cyan bold")
+    sys.exit()
+
 
 def main():
     try:
-        os.system("figlet Kona Downloader")
-        slowprint("\033[1;36m ==============================================")
-        print(" ")
-        
-        tag = input("Enter tags (eg long_hair, skirt, original, touhou. etc): ").strip()
-        character = input("Enter characters (eg hatsune_miku, kagamine_rin, yakumo_yukari etc): ").strip()
+        console.print(
+            Panel.fit("[cyan]Konachan downloader...[/cyan]", border_style="cyan")
+        )
+        console.print("=" * 46, style="cyan bold")
+        console.print()
+
+        console.print("[dim]Examples: long_hair, skirt, original, touhou[/dim]")
+        tag = Prompt.ask(
+            "[cyan]Enter tags[/cyan]", default="", show_default=False
+        ).strip()
+
+        console.print("[dim]Examples: hatsune_miku, kagamine_rin, yakumo_yukari[/dim]")
+        character = Prompt.ask(
+            "[cyan]Enter characters[/cyan]", default="", show_default=False
+        ).strip()
+
+        console.print("[dim]Examples: 1 3 5 or 1-5[/dim]")
+        pages_input = Prompt.ask(
+            "[cyan]Enter pages[/cyan]", default="1", show_default=False
+        ).strip()
+
+        if not pages_input:
+            pages = [1]
+        else:
+            pages = parse_pages(pages_input)
+
+        folder_name = Prompt.ask(
+            "[cyan]Enter folder name[/cyan]", default="images"
+        ).strip()
+
+        if not folder_name:
+            folder_name = "images"
 
         while True:
-            try:
-                pages_input = input("Enter pages (eg. 1 3 5 or 1-5 | default is 1 page): ").strip()
-                if not pages_input:
-                    pages = [1]
-                else:
-                    pages = parse_pages(pages_input)
-                if pages:
-                    break
-                print("Invalid page format. Please try again.")
-            except ValueError:
-                print("Invalid page numbers. Please try again.")
+            nsfw_input = Prompt.ask(
+                "[cyan]Do you want NSFW images?[/cyan]",
+                default="yes",
+                choices=["yes", "no"],
+                show_default=True,
+            ).lower()
 
-        folder_name = input("Enter folder name (default: images): ").strip() or "images"
-        
-        while True:
-            nsfw_input = input("Do you want NSFW images? (yes/no leave blank for NSFW): ").strip().lower()
-            if nsfw_input in ['yes', 'no', '']:
-                nsfw = nsfw_input in ['yes', '']
+            if nsfw_input in ["yes", "no", ""]:
+                nsfw = nsfw_input in ["yes", ""]
                 break
-            print("\033[1;91mInvalid input! Please enter 'yes', 'no', or leave blank for NSFW.\033[0m")
+            else:
+                console.print(
+                    "[red]Invalid input! Please enter 'yes', 'no', or leave blank for NSFW.[/red]"
+                )
 
         print(" ")
-        slowprint("\033[1;36m ==============================================")
+        console.print("=" * 46, style="cyan bold")
+
         folder_name = os.path.join(os.getcwd(), folder_name)
-        
+
         get_images(tag, character, pages, folder_name, nsfw)
 
     except KeyboardInterrupt:
-        logger.info("\nExiting...")
-    except Exception as e:
-        logger.error(f"An error occurred: {str(e)}")
-    finally:
-        sys.exit()
+        return
+
 
 if __name__ == "__main__":
     main()
-
