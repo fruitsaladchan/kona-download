@@ -187,7 +187,9 @@ def main():
         print(" ")
         console.print("=" * 46, style="cyan bold")
 
-        folder_name = os.path.join(os.getcwd(), folder_name)
+        folder_name = os.path.expanduser(folder_name)
+        if not os.path.isabs(folder_name):
+            folder_name = os.path.join(os.getcwd(), folder_name)
 
         get_images(tag, character, pages, folder_name, nsfw)
 
