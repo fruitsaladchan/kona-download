@@ -18,15 +18,6 @@ from rich.text import Text
 
 console = Console()
 
-
-def slowprint(text, delay=1.0 / 400):
-    text_obj = Text(text)
-    for char in text:
-        console.print(char, end="")
-        time.sleep(delay)
-    console.print()
-
-
 def download_image(url, folder, progress):
     response = requests.get(url)
     if response.status_code == 200:
