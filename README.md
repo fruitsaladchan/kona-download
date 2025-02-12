@@ -1,6 +1,6 @@
 # kona-download
 
-simple script to download photos from https://konachan.com/
+lil script to download photos from https://konachan.com/
 
 - leaving tags and characters option blank will download most recent images from https://konachan.com/post?tags=
 - to download single pages enter as "1 2 3" or "1-3" / leaving blank downloads one page
@@ -9,13 +9,5 @@ simple script to download photos from https://konachan.com/
 # dependencies
 
 ```
-pip install tqdm requests beautifulsoup4
-```
-## For Arch Linux
-```
-sudo pacman -S figlet 
-```
-## For Ubuntu/Debian
-```
-sudo apt-get install figlet
+pip install rich requests beautifulsoup4
 ```
